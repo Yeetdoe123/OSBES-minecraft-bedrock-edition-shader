@@ -4,6 +4,9 @@
 
 #include "fragmentVersionCentroid.h"
 
+#include "includes/color_grading.glsl"
+#include "includes/helpers.glsl"
+
 #if __VERSION__ >= 300
 	#ifndef BYPASS_PIXEL_SHADER
 		#if defined(TEXEL_AA) && defined(TEXEL_AA_FEATURE)
@@ -43,29 +46,6 @@ LAYOUT_BINDING(2) uniform sampler2D TEXTURE_2;
 
 varying vec4 blueFog;
 varying vec4 milkyFog;
-
-float rand(highp vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-float rand_bilinear(highp vec2 coord){
-	
-	vec2 flooredCoord = floor(coord);
-
-	float leftTopSample = rand(flooredCoord);
-	float righTopSample = rand(flooredCoord + vec2(0.0, 1.0));
-	float leftBottomSample = rand(flooredCoord + vec2(1.0, 0.0));
-	float rightBottomSample = rand(flooredCoord + vec2(1.0, 1.0));
-
-	vec2 fractionalPart = coord - flooredCoord;
-
-	float topRow = mix(leftTopSample, righTopSample, fractionalPart.y);
-	float botRow = mix(leftBottomSample, rightBottomSample, fractionalPart.y);
-
-	float result = mix(topRow, botRow, fractionalPart.x);
-	
-	return result;
-}
 
 
 
@@ -578,25 +558,8 @@ void main()
 	diffuse.rgb = mix( diffuse.rgb, clearSkyLightColor + rainSkyLightColor * 0.3, fogColor.a);
 #endif //FOG
 
-	///////////////////Color correction section////////////////////
 
-
-	vec3 tint = vec3(1.5, 1.25, 1.0)*2.75;
-	diffuse.rgb *= tint;
-
-	float contrast = 2.0;
-	diffuse.rgb = pow(diffuse.rgb, vec3(contrast));
-
-	// Tone compensation
-	diffuse.rgb = diffuse.rgb/(diffuse.rgb + vec3(1.0));
-	
-	// Gamma correction
-	float gamma = 1.0;
-	diffuse.rgb = pow(diffuse.rgb, vec3(1.0 / gamma));
-
-	float saturation = 1.0;
-	float grayScale = (diffuse.r + diffuse.g + diffuse.b) / 3.0;
-	diffuse.rgb = mix(vec3(grayScale), diffuse.rgb, saturation);
+    diffuse = colorGrading(diffuse);
 
 
 	// Default fog in hell because it has no skyplane
