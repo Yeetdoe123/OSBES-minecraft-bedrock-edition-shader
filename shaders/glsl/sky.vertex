@@ -7,6 +7,8 @@
 #include "uniformPerFrameConstants.h"
 #include "uniformShaderConstants.h"
 
+#include "includes/ingame_env.glsl"
+
 attribute mediump vec4 POSITION;
 attribute vec4 COLOR;
 
@@ -18,34 +20,12 @@ const float fogNear = 0.3;
 
 void main()
 {
-
-	//vec3 clearSkyColor = vec3(0.41, 0.69, 1.0);
-	//vec4 rainSkyColor = vec4(0.25, 0.25, 0.25, 1.0);
-	//float isDay = 1.0;
-
-    isUnderWater = 0.0;
-   // Get the shade (not related to brightness) of fog_color
-	vec3 fogColorNormalized = normalize(FOG_COLOR.rgb);
-	if(fogColorNormalized.r < 0.22 
-	&& fogColorNormalized.b < 0.90 && fogColorNormalized.b > 0.77
-	&& fogColorNormalized.g < 0.61 && fogColorNormalized.g > 0.44){
-		isUnderWater = 1.0;
-	}
-
+    isUnderWater = detectUnderWater(FOG_COLOR.rgb);
 	
     position = POSITION;
     
-    // pos.y -= 0.03;
     position.y -= length(position.xz)/(4.0 * (1.1 - isUnderWater));
     gl_Position = WORLDVIEWPROJ * position;
 
-    //color.rgb = mix(clearSkyColor * vec3(0.25, 0.25, 0.5), clearSkyColor, COLOR.r * 3.0);
-
-    //color = mix( CURRENT_COLOR * (clearSkyColorMult * isDay + rainSkyColorMult * (1.0 - isDay)), FOG_COLOR, COLOR.r);
-    
     height = COLOR.r; 
-    
-    
-
-	
 }

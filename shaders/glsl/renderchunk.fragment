@@ -6,6 +6,7 @@
 
 #include "includes/color_grading.glsl"
 #include "includes/helpers.glsl"
+#include "includes/ingame_env.glsl"
 
 #if __VERSION__ >= 300
 	#ifndef BYPASS_PIXEL_SHADER
@@ -72,21 +73,9 @@ highp vec2 parallax(highp vec2 uv, highp vec3 viewDir){
 
 void main()
 {
-	// Bottom left pixel becomes bluish at night. So we can get exact day time by calulating how much bigger b is than g
-	vec3 dayTimeDetectionPixel = texture2D(TEXTURE_1, vec2(0.0, 1.0)).rgb;
-	float dayTime = dayTimeDetectionPixel.g / dayTimeDetectionPixel.b;
-	float isDay = pow(dayTime, 5.0);
-
-	float isSunrize = dot(normalize(FOG_COLOR.rgb), vec3(1.0, 0.0, 0.0));
-	isSunrize = pow(isSunrize, 4.0);
-	
-	// Top left pixel is darker in overworld and brighter in the Nether
-    float hellDetectionPixel = texture2D(TEXTURE_1, vec2(0.0)).r;
-    float isHell = 0.0;
-	if (hellDetectionPixel > 0.15){
-		isHell = 1.0;
-	}
-   
+    float isDay = detectDay(TEXTURE_1);
+    float isSunrize = detectSunrize(FOG_COLOR.rgb);
+    float isHell = detectHell(TEXTURE_1);
 
 #ifdef BYPASS_PIXEL_SHADER
 	gl_FragColor = vec4(1.0, 0, 0, 1.0);
