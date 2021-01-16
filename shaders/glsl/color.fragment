@@ -9,6 +9,7 @@
 #include "includes/color_grading.glsl"
 #include "includes/helpers.glsl"
 #include "includes/ingame_env.glsl"
+#include "includes/clouds.glsl"
 
 varying float height;
 varying vec4 position;
@@ -51,25 +52,12 @@ void main()
 
 
 
-	highp float time = TIME;
+// 	highp float time = TIME;
 	float cloudsSpeed = 0.1;
 	float cloudsScale = 16.0;
+	int cloudsDetail = 5;
 
-	highp vec2 cldCoord = position.xz * cloudsScale;
-	cldCoord += vec2(time * cloudsSpeed);
-	
-	
-	float clouds = rand_bilinear(cldCoord) * 128.0;
-
-	clouds += rand_bilinear(position.xz * cloudsScale * 2.0) * 64.0;
-	clouds += rand_bilinear(position.xz * cloudsScale * 4.0) * 32.0;
-	clouds += rand_bilinear(position.xz * cloudsScale * 8.0) * 16.0;	
-	clouds += rand_bilinear(position.xz * cloudsScale * 16.0) * 8.0;	
-	clouds += rand_bilinear(position.xz * cloudsScale * 32.0) * 4.0;
-	//clouds += rand_bilinear(position.xz * cloudsScale * 64.0) * 2.0;		
-	//clouds += rand_bilinear(position.xz * cloudsScale * 128.0);
-
-	clouds /= 252.0;
+    float clouds = calculateCloudsBase(position.xz, cloudsSpeed, cloudsScale, cloudsDetail);
 
 	float cloudsShadow = pow(clamp(clouds * 1.5, 0.0, 1.0), 0.75);
 

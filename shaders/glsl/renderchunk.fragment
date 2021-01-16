@@ -8,6 +8,7 @@
 #include "includes/helpers.glsl"
 #include "includes/ingame_env.glsl"
 #include "includes/lighting.glsl"
+#include "includes/clouds.glsl"
 
 #if __VERSION__ >= 300
 	#ifndef BYPASS_PIXEL_SHADER
@@ -442,19 +443,16 @@ void main()
 		if(isWater > 0.9){
 		    highp float time = TIME;
 	        highp float cloudsSpeed = 0.1;
+	        highp float cloudsScale = 1.0;
+	        int cloudsDetail = 0;
 			
-
-
-
-
 
 			highp vec2 cldCoord = -relativePosition.xz;
 			cldCoord += normalColor.rb * 2.0;
 			cldCoord /= 1.0 + pow(skyLightFresnel.a, 4.0);
 			cldCoord /= length(relativePosition.y);
-			cldCoord += vec2(time * cloudsSpeed);
 			
-			float clouds = rand_bilinear(cldCoord);
+			float clouds = calculateCloudsBase(cldCoord, cloudsSpeed, cloudsScale, cloudsDetail);
 
 			//float cloudsShadow = pow(clamp(clouds * 1.25, 0.0, 1.0), 4.0);
 
@@ -574,9 +572,5 @@ void main()
 	//diffuse.rgb = texture2D(TEXTURE_1, vec2(0.0, 1.0)).rgb;
 	
 	gl_FragColor = diffuse;
-
-	// gl_FragColor.rg = FOG_CONTROL;
-	//gl_FragColor = vec4(1.0,0.0,0.0,1.0);
-	//gl_FragColor.r += isHell;
 #endif // BYPASS_PIXEL_SHADER
 }
