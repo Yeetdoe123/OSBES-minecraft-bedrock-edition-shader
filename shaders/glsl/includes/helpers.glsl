@@ -3,6 +3,11 @@ float rand(highp vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+float step_rand(highp vec2 coord){
+	vec2 flooredCoord = floor(coord);
+	return rand(flooredCoord);
+}
+
 float rand_bilinear(highp vec2 coord){
 	
 	vec2 flooredCoord = floor(coord);

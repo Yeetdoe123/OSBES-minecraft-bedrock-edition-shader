@@ -17,7 +17,6 @@ float calculateCloudsBase(vec2 position, float speed,float scale, int detail){
 	    scaleMult *= 2.0;
 	    resultDevider += additionMult;
 	    additionMult /= 2.0;
-	    
 	}
 
 	return clouds / resultDevider;
