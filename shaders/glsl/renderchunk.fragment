@@ -13,13 +13,13 @@
 
 #if __VERSION__ >= 300
 	#ifndef BYPASS_PIXEL_SHADER
-		#if defined(TEXEL_AA) && defined(TEXEL_AA_FEATURE)
+		// #if defined(TEXEL_AA) && defined(TEXEL_AA_FEATURE)
+		// 	_centroid in highp vec2 uv0;
+		// 	_centroid in highp vec2 uv1;
+		// #else
 			_centroid in highp vec2 uv0;
 			_centroid in highp vec2 uv1;
-		#else
-			_centroid in highp vec2 uv0;
-			_centroid in highp vec2 uv1;
-		#endif
+		// #endif
 	#endif //BYPASS_PIXEL_SHADER
 #else
 	#ifndef BYPASS_PIXEL_SHADER
@@ -52,28 +52,6 @@ varying vec4 blueFog;
 varying vec4 milkyFog;
 
 
-
-highp vec2 parallax(highp vec2 uv, highp vec3 viewDir){
-	
-	highp vec3 n = vec3(0.0, 1.0, 0.0);
-	highp vec3 t = vec3(0.0, 0.0, 1.0);
-	highp vec3 b = vec3(1.0, 0.0, 0.0);
-
-	highp mat3 tbn = transpose(mat3(t, b, n));
-
-	viewDir = tbn * viewDir;
-
-	highp float height_scale = 0.01;
-
-	//highp float height = texture2D(TEXTURE_0, uv).b;
-	highp float height = 0.5;
-	highp vec2 p = viewDir.xy / viewDir.z * (height * height_scale);
-
-	//return uv;
-	return uv - p;
-}
-
-
 void main()
 {
     float isDay = detectDay(TEXTURE_1);
@@ -90,74 +68,27 @@ void main()
 #else*/
 
 
-	////////////////////////////Mapping section///////////////////////////////////
-
-	// By default (with default texture pack) result "megatexture" demensions is 1.0 x 0.5
-	// but wtih my texture pack I have 1.0 x ture2D1.0. with your custom texuture pack you should check result texture  dimensions
-	
+	////////////////////////////Mapping section///////////////////////////////////	
 	// Top left texture - default diffuse
 	highp vec2 localDiffuseCoord = fract(uv0 * vec2(32.0)) * vec2(0.015625);// 1.0 / 64.0 = 0.015625
+	vec4 diffuse = texelFetch(TEXTURE_0, ivec2((uv0 - localDiffuseCoord) * 1024.0), 0);
 	// Top right texture - specular map
 	highp vec2 localSpecularCoord = localDiffuseCoord - vec2(0.015625, 0.0);// 1.0/64.0 = 0.015625
-
-
-	// Debug checking result texture (you should find block with top left corner texture and place it somewhere in the world)
-	//vec4 diffuse = texture2D(TEXTURE_0, uv0 * 32.0 - vec2(1.0, 0.0));
-	
-	//vec4 diffuse = texture2D(TEXTURE_0, uv0 - localDiffuseCoord);
-	vec4 diffuse = texelFetch(TEXTURE_0, ivec2((uv0 - localDiffuseCoord) * 1024.0), 0);
-	//vec4 diffuse = texture2D(TEXTURE_0, parallax(uv0 - localDiffuseCoord, relativePosition.xyz));
-
-
-	//vec4 specularMap = clamp(texture2D(TEXTURE_0, uv0 - localSpecularCoord),0.01, 1.0);
 	vec4 specularMap = clamp(texelFetch(TEXTURE_0, ivec2((uv0 - localSpecularCoord) * 1024.0), 0),0.01, 1.0);
+	
 	vec4 normalMap = vec4(0.0);	
 	normalColor.rgb = vec3(0.0);
 	
-	vec4  puddles = vec4(0.0, 0.0, 0.0, 0.0);
+	vec4  puddles = vec4(0.0);
 
 	if(isRain > 0.1 && isWater < 0.1){
 		
-		float puddlesSharpness = 2.0;
-		float puddlesCovering = 1.5;
-		float puddlesScale = 32.0;
-		float minRainWettneess = 0.25;
-
-		vec2 noiseTextureOffset = vec2(1.0/32.0, 0.0); 
-		puddles = texture(TEXTURE_0, fract(position.xz  / puddlesScale)/32.0 + noiseTextureOffset);
-		puddles.rgb = pow(puddles.rgb * isRain * puddlesCovering, vec3(puddlesSharpness));
-		puddles.rgb = clamp(puddles.rgb, minRainWettneess, 1.0);
-
-		puddles.rgb *= vec3(pow(uv1.y, 2.0));// No puddles in dark places like caves
+		puddles.rgb = calculatePuddles(TEXTURE_0, position.xz, isRain, uv1.y);
+		
 	}
 
 	if(isWater >  0.9){
-		//normalColor.rgb = vec3(0.0,1.0,0.0);
-		highp float t = TIME * 0.1;
-		
-		float wnScale = 1.0;
-		
-		vec2 waterNormalOffset = vec2(4.0/32.0, 0.0);
-
-		
-		// 1.0/64.0 = 0.0156251          1.5 / 32.0 =  0.046875 (water normal map offset)
-		// TODO resolve interpolation issues on edges using a more correct way (currently it is wierd)
-		normalMap = texture2D(TEXTURE_0, fract(position.xz*1.0*wnScale + t*wnScale * 2.0)/33.0 + waterNormalOffset);
-		normalMap += texture2D(TEXTURE_0, fract(position.xz*0.5*wnScale - t*wnScale * 1.5)/33.0 + waterNormalOffset);// 
-		normalMap += texture2D(TEXTURE_0, fract(position.xz*0.25*wnScale + t*wnScale * 1.15)/33.0 + waterNormalOffset);
-		normalMap += texture2D(TEXTURE_0, fract(position.xz*0.125*wnScale - t*wnScale*0.9)/33.0 + waterNormalOffset);
-		
-		
-		// normalMap *= 0.5;
-		// normalMap *= 0.33;
-		normalMap *= 0.25;
-		//normalMap.b = clamp(normalMap.b, 0.5, 1.0);
-		
-		
-		
-		
-		
-
+		normalMap.rgb = calculateWaterNormal(TEXTURE_0, position.xz);
 	}else{
 		// Bottom left texture - normalmap
 		highp vec2 localNormalCoord = localDiffuseCoord - vec2(0.0, 0.015625);
@@ -201,12 +132,10 @@ void main()
 	vec3 initNormalColor = normalize(cross(dp1, dp2));
 	normalColor.rgb = initNormalColor;
 
+	normalColor.rgb = rotateNormalMap(normalMap.rgb, normalColor.rgb);
+	// normalColor.rgb = rotateNormalMap(normalMap.rgb, normalColor.rgb, uv0, dp1, dp2);
+	// normalColor.rgb = rotateNormalMap(initNormalColor.rgb, normalColor.rgb, normalMap.rgb, position.xyz, uv0);
 	
-	
-
-	
-	
-
 
 
 
@@ -217,9 +146,7 @@ void main()
 	puddles.r = max(initNormalColor.g * puddles.r, 0.5);
 	diffuse.rgb = mix(diffuse.rgb, vec3(0.15,0.15,0.15),puddles.r * isRain);
 
-	normalColor.rgb = rotateNormalMap(normalMap.rgb, normalColor.rgb);
-	// normalColor.rgb = rotateNormalMap(normalMap.rgb, normalColor.rgb, uv0, dp1, dp2);
-	// normalColor.rgb = rotateNormalMap(initNormalColor.rgb, normalColor.rgb, normalMap.rgb, position.xyz, uv0);
+	
 
 
 	///////////////////////Lighting section//////////////////////////
