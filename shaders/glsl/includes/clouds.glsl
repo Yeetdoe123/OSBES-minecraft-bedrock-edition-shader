@@ -1,4 +1,5 @@
 #include "../uniformPerFrameConstants.h"
+#include "../uniformShaderConstants"
 #include "helpers.glsl"
 
 float calculateCloudsBase(vec2 position, float speed,float scale, int detail){
@@ -20,4 +21,18 @@ float calculateCloudsBase(vec2 position, float speed,float scale, int detail){
 	}
 
 	return clouds / resultDevider;
+}
+
+
+vec3 colorizeClouds(float cloudsBase, float cloudsCutout, float isRain, vec3 skyColor){
+	float cloudsShadow = pow(clamp(cloudsBase * 1.5, 0.0, 1.0), 0.75);
+	
+	vec3 cloudsColor = vec3(1.5) * pow(length(FOG_COLOR.gb), 2.0);
+	vec3 clearSkyCloudsShadowColor = (skyColor * (0.5 + pow(length(FOG_COLOR.gb), 2.0) * 0.5)) * 0.75;
+	vec3 rainSkyCloudsShadowColor = cloudsColor;
+	vec3 cloudsShadowColor = mix(clearSkyCloudsShadowColor, rainSkyCloudsShadowColor, isRain);
+	
+	cloudsShadowColor = mix(cloudsShadowColor, vec3(length(cloudsShadowColor)), 0.125); //desaturate
+
+	return mix(cloudsColor, cloudsShadowColor, cloudsShadow);
 }
